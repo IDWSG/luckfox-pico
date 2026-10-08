@@ -26,7 +26,6 @@
 #include <linux/string.h>
 #include <linux/slab.h>
 #include <linux/ctype.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 #include <linux/stdarg.h>
 #else
 #include <stdarg.h>
@@ -94,45 +93,45 @@ static inline long pu_port_labs(long x) { return (x < 0) ? -x : x; }
  */
 #define PU_PORT_PI      3.14159265358979323846
 #define PU_PORT_HALF_PI 1.57079632679489661923
-static inline double pu_port_sin(double x) {
-  const double two_pi = 2.0 * PU_PORT_PI;
-  while (x > PU_PORT_PI) {
-    x -= two_pi;
-  }
-  while (x < -PU_PORT_PI) {
-    x += two_pi;
-  }
-  double term = x;
-  double sum = x;
-  for (int i = 1; i <= 18; i++) {
-    term *= -(x * x) / ((2.0 * i) * (2.0 * i + 1.0));
-    sum += term;
-  }
-  return sum;
-}
-static inline double pu_port_cos(double x) { return pu_port_sin(x + PU_PORT_HALF_PI); }
-static inline double pu_port_asin(double x) {
-  if (x >= 1.0) {
-    return PU_PORT_HALF_PI;
-  }
-  if (x <= -1.0) {
-    return -PU_PORT_HALF_PI;
-  }
-  double y = x; /* 初值 x, |x| < 1 时牛顿法收敛于 [-PI/2, PI/2] */
-  for (int i = 0; i < 24; i++) {
-    double c = pu_port_cos(y);
-    if (c < 1e-10 && c > -1e-10) {
-      break; /* y 已逼近 ±PI/2, 导数趋零即视为收敛 */
-    }
-    double d = (pu_port_sin(y) - x) / c;
-    y -= d;
-    if (d < 1e-12 && d > -1e-12) {
-      break;
-    }
-  }
-  return y;
-}
-#define asin(x) pu_port_asin((double)(x))
+// static inline double pu_port_sin(double x) {
+//   const double two_pi = 2.0 * PU_PORT_PI;
+//   while (x > PU_PORT_PI) {
+//     x -= two_pi;
+//   }
+//   while (x < -PU_PORT_PI) {
+//     x += two_pi;
+//   }
+//   double term = x;
+//   double sum = x;
+//   for (int i = 1; i <= 18; i++) {
+//     term *= -(x * x) / ((2.0 * i) * (2.0 * i + 1.0));
+//     sum += term;
+//   }
+//   return sum;
+// }
+// static inline double pu_port_cos(double x) { return pu_port_sin(x + PU_PORT_HALF_PI); }
+// static inline double pu_port_asin(double x) {
+//   if (x >= 1.0) {
+//     return PU_PORT_HALF_PI;
+//   }
+//   if (x <= -1.0) {
+//     return -PU_PORT_HALF_PI;
+//   }
+//   double y = x; /* 初值 x, |x| < 1 时牛顿法收敛于 [-PI/2, PI/2] */
+//   for (int i = 0; i < 24; i++) {
+//     double c = pu_port_cos(y);
+//     if (c < 1e-10 && c > -1e-10) {
+//       break; /* y 已逼近 ±PI/2, 导数趋零即视为收敛 */
+//     }
+//     double d = (pu_port_sin(y) - x) / c;
+//     y -= d;
+//     if (d < 1e-12 && d > -1e-12) {
+//       break;
+//     }
+//   }
+//   return y;
+// }
+// #define asin(x) pu_port_asin((double)(x))
 
 /* ---- 浮点保护：内核使用 FP 寄存器前必须保存/恢复用户态 FP 状态 ----
  * 用法（三步，PU_FP_STATE 声明的缓冲区供 BEGIN 保存 / END 恢复复用）:
