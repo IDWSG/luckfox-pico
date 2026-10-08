@@ -26,10 +26,7 @@
 #include <linux/string.h>
 #include <linux/slab.h>
 #include <linux/ctype.h>
-#include <linux/stdarg.h>
-#else
 #include <stdarg.h>
-#endif
 #include <linux/errno.h>
 
 /* ---- 整型：内核无 <stdint.h>，用 linux/types.h 映射 ---- */
