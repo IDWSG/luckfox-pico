@@ -137,6 +137,18 @@ jobs:
             fi
           done
 
+      - name: Build meterd (userspace)
+        run: |
+          TOOLCHAIN_BIN="$GITHUB_WORKSPACE/$TOOLCHAIN_DIR/bin"
+          CROSS_GCC="$TOOLCHAIN_BIN/arm-rockchip830-linux-uclibcgnueabihf-gcc"
+          [ -x "$CROSS_GCC" ] || { echo "找不到交叉编译器: $CROSS_GCC"; exit 1; }
+
+          mkdir -p output/userspace
+          "$CROSS_GCC" -O2 -Wall -static \
+            -o output/userspace/meterd \
+            sysdrv/drv_ko/sample/meterd.c
+          file output/userspace/meterd
+          
       # 只收集比 marker 新的 .ko (即本次编译产物), 按原目录结构暂存
       - name: Collect and verify artifacts
         run: |
