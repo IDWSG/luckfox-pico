@@ -166,6 +166,15 @@ jobs:
             modinfo "$ko" 2>/dev/null | grep -E "^(version|vermagic|license|depends):" || file "$ko"
           done < /tmp/ko.list
 
+          # 收集 meterd
+          if [ -f output/userspace/meterd ]; then
+            cp output/userspace/meterd $STAGING/
+            echo "--- meterd"
+            file $STAGING/meterd
+          else
+            echo "::warning::meterd 未生成，检查 Build meterd 步骤"
+          fi
+
           echo "=== 暂存目录 ==="
           find $STAGING -type f
 
