@@ -14,17 +14,17 @@
 #include <termios.h>
 #include <unistd.h>
 
-#define SAMPLE_IOC_MAGIC        'S'
-#define SAMPLE_IOC_GET_CMD      _IOWR(SAMPLE_IOC_MAGIC, 1, struct sample_buf)
-#define SAMPLE_IOC_PUT_RESULT   _IOW(SAMPLE_IOC_MAGIC, 2, struct sample_buf)
+#define SAMPLE_IOC_MAGIC 'S'
+#define SAMPLE_IOC_GET_CMD _IOWR(SAMPLE_IOC_MAGIC, 1, struct sample_buf)
+#define SAMPLE_IOC_PUT_RESULT _IOW(SAMPLE_IOC_MAGIC, 2, struct sample_buf)
 #define SAMPLE_IOC_SET_NONBLOCK _IO(SAMPLE_IOC_MAGIC, 3)
 
-#define SAMPLE_CMD_MAX     64
-#define SAMPLE_RESULT_MAX  128
+#define SAMPLE_CMD_MAX 64
+#define SAMPLE_RESULT_MAX 128
 
 struct sample_buf {
-    unsigned int len;
-    char         data[SAMPLE_CMD_MAX];
+  unsigned int len;
+  char data[SAMPLE_CMD_MAX];
 };
 
 #define SAMPLE_DEV "/dev/sample"
@@ -55,41 +55,78 @@ static int serial_open(const char *dev) {
   return fd;
 }
 
-static char *rn8209_query(const char *cmd){
+static char *rn8209_query(const char *cmd) {
   unsigned char tx[16];
   unsigned char rx[32];
   int tx_len = 0, n, i;
   char *result = NULL;
 
+  /*
+   * TODO: 按 RN8209 手册拼命令。
+   * 下面只是示意：把 "voltage" 映射成一个假命令。
+   */
   if (strncmp(cmd, "voltage", 7) == 0) {
+    /* 示例：读电压寄存器，帧格式按手册改 */
+    tx[0] = 0x81; /* 读命令 */
+    tx[1] = 0x02; /* 电压寄存器地址高字节 */
+    tx[2] = 0x00; /* 地址低字节 */
+    tx[3] = 0x00; /* 校验占位 */
+    tx_len = 4;
   } else if (strncmp(cmd, "current", 7) == 0) {
-  } else if (strncmp(cmd, "power", 5) == 0) {
-  } else if (strncmp(cmd, "energy", 6) == 0) {
+    tx[0] = 0x81;
+    tx[1] = 0x03;
+    tx[2] = 0x00;
+    tx[3] = 0x00;
+    tx_len = 4;
   } else {
-    fprintf(stderr, "Unknown command: %s\n", cmd);
-    return NULL;
+    result = strdup("unknown command\n");
+    return result;
   }
 
-  // 发送命令
+  /* 发命令 */
   n = write(serial_fd, tx, tx_len);
   if (n != tx_len) {
-    fprintf(stderr, "Failed to write to serial: %s\n", strerror(errno));
+    perror("serial write");
     return NULL;
   }
 
-  // 等回复
-  fd_set readfds;
-  struct timeval timeout = {.tv_sec = 0, .tv_usec = 200000}; // 200ms
-  FD_ZERO(&readfds);
-  FD_SET(serial_fd, &readfds);
+  /* 等回复：用 select 做超时 */
+  fd_set rfds;
+  struct timeval tv = {.tv_sec = 0, .tv_usec = 200000}; /* 200ms */
+  FD_ZERO(&rfds);
+  FD_SET(serial_fd, &rfds);
 
-  n = select(serial_fd + 1, &readfds, NULL, NULL, &timeout);
-  if (n < 0) {
-    return NULL;
+  n = select(serial_fd + 1, &rfds, NULL, NULL, &tv);
+  if (n <= 0) {
+    return strdup("timeout\n");
   }
+
+  n = read(serial_fd, rx, sizeof(rx));
+  if (n <= 0) {
+    return strdup("read error\n");
+  }
+
+  /* 打印原始字节，方便调试 */
+  printf("meterd: rx %d bytes:", n);
+  for (i = 0; i < n; i++)
+    printf(" %02X", rx[i]);
+  printf("\n");
+
+  /*
+   * TODO: 按手册解析 rx，算出电压/电流值。
+   * 下面只是占位。
+   */
+  result = malloc(64);
+  if (!result)
+    return NULL;
+
+  if (strncmp(cmd, "voltage", 7) == 0)
+    snprintf(result, 64, "220.0\n");
+  else
+    snprintf(result, 64, "1.23\n");
+
+  return result;
 }
-
-
 
 int main(void) {
   struct sample_buf kbuf;
@@ -147,7 +184,6 @@ int main(void) {
       break;
     }
   }
-
 
   close(sample_fd);
   close(serial_fd);
