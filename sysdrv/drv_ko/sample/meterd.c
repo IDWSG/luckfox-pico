@@ -67,17 +67,11 @@ static char *rn8209_query(const char *cmd) {
    */
   if (strncmp(cmd, "voltage", 7) == 0) {
     /* 示例：读电压寄存器，帧格式按手册改 */
-    tx[0] = 0x81; /* 读命令 */
-    tx[1] = 0x02; /* 电压寄存器地址高字节 */
-    tx[2] = 0x00; /* 地址低字节 */
-    tx[3] = 0x00; /* 校验占位 */
-    tx_len = 4;
+    tx[0] = 0x24;
+    tx_len = 1;
   } else if (strncmp(cmd, "current", 7) == 0) {
-    tx[0] = 0x81;
-    tx[1] = 0x03;
-    tx[2] = 0x00;
-    tx[3] = 0x00;
-    tx_len = 4;
+    tx[0] = 0x22;
+    tx_len = 1;
   } else {
     result = strdup("unknown command\n");
     return result;
