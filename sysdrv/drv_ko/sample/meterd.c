@@ -50,6 +50,9 @@ static int serial_open(const char *dev) {
   options.c_cflag &= ~CSTOPB;
   options.c_cflag &= ~CSIZE;
   options.c_cflag |= CS8;
+  options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); /* ← 加这一行，raw 模式 */
+  options.c_iflag &= ~(IXON | IXOFF | IXANY); /* 关软件流控 */
+  options.c_oflag &= ~OPOST; /* 关输出处理（含 onlcr） */
   tcsetattr(fd, TCSANOW, &options);
 
   return fd;
